@@ -3,13 +3,15 @@ const methodOverride = require('method-override');
 const morgan = require('morgan');
 const session = require('express-session');
 const MongoStore = require('connect-mongo');
+const isSignedIn = require('./middleware/isSignedIn');
 const addUserToViews = require('./middleware/addUserToViews');
 require('dotenv').config();
 require('./config/database');
 
 // Controllers
 const authController = require('./controllers/auth');
-const isSignedIn = require('./middleware/isSignedIn');
+const foodsController = require('./controllers/foods.js');
+
 
 const app = express();
 // Set the port from environment variable or default to 3000
@@ -35,25 +37,27 @@ app.use(
 );
 
 app.use(addUserToViews);
+app.use('/auth', authController);
 
 // Public Routes
 app.get('/', async (req, res) => {
   res.render('index.ejs');
 });
 
+app.get('/new', async (req, res) => {
+  res.render('new.ejs');
+});
+
+app.post('/users/:userId/foods',foodsController);
+
 app.use('/auth', authController);
+app.use('/users/:userId/foods',foodsController);
 
 // Protected Routes
 app.use(isSignedIn);
+app.use('/users/:userId/foods',foodsController);
 
-app.get('/protected', async (req, res) => {
-  if (req.session.user) {
-    res.send(`Welcome to the party ${req.session.user.username}.`);
-  } else {
-    res.sendStatus(404);
-    // res.send('Sorry, no guests allowed.');
-  }
-});
+app.get('/users/:userId/foods/new',foodsController);
 
 app.listen(port, () => {
   // eslint-disable-next-line no-console
